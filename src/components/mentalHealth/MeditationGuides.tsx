@@ -1,85 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
 import { Card, Button, IconButton, ProgressBar } from 'react-native-paper';
-import axios from 'axios';
-import { Audio } from 'expo-av';
-import { config } from '../../config/config';
-
-interface Track {
-  id: string;
-  title: string;
-  subtitle: string;
-  duration: string;
-  url: string;
-}
-
-interface MeditationSession {
-  id: string;
-  title: string;
-  description: string;
-  tracks: Track[];
-}
+import { meditationService, Track, MeditationSession } from '../../services/meditationService';
 
 const MeditationGuides = () => {
   const [sessions, setSessions] = useState<MeditationSession[]>([]);
-  const [activeSession, setActiveSession] = useState<MeditationSession | null>(null);
   const [activeTrack, setActiveTrack] = useState<Track | null>(null);
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [sound, setSound] = useState<Audio.Sound | null>(null);
   const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     fetchMeditationTracks();
     return () => {
-      if (sound) {
-        sound.unloadAsync();
-      }
+      meditationService.cleanup();
     };
   }, []);
 
   const fetchMeditationTracks = async () => {
-    const options = {
-      method: 'GET',
-      url: 'https://shazam.p.rapidapi.com/search',
-      params: {
-        term: 'meditation music relaxation',
-        locale: 'en-US',
-        offset: '0',
-        limit: '5'
-      },
-      headers: {
-        'X-RapidAPI-Key': config.api.shazam.key,
-        'X-RapidAPI-Host': 'shazam.p.rapidapi.com'
-      }
-    };
-
     try {
-      const response = await axios.request(options);
-      const tracks = response.data.tracks.hits.map((hit: any) => ({
-        id: hit.track.key,
-        title: hit.track.title,
-        subtitle: hit.track.subtitle,
-        duration: '5 min',
-        url: hit.track.hub.actions?.[1]?.uri || ''
-      }));
-
-      // Group tracks into meditation sessions
-      const meditationSessions: MeditationSession[] = [
-        {
-          id: '1',
-          title: 'Stress Relief',
-          description: 'Calming sounds to help reduce stress and anxiety',
-          tracks: tracks.slice(0, 3)
-        },
-        {
-          id: '2',
-          title: 'Deep Relaxation',
-          description: 'Peaceful melodies for deep relaxation and inner peace',
-          tracks: tracks.slice(3, 6)
-        },
-      ];
-
+      const meditationSessions = await meditationService.fetchMeditationTracks();
       setSessions(meditationSessions);
       setLoading(false);
     } catch (error) {
@@ -90,18 +30,9 @@ const MeditationGuides = () => {
 
   const playSound = async (track: Track) => {
     try {
-      if (sound) {
-        await sound.unloadAsync();
-      }
-      const { sound: newSound } = await Audio.Sound.createAsync(
-        { uri: track.url },
-        { shouldPlay: true },
-        onPlaybackStatusUpdate
-      );
-      setSound(newSound);
+      await meditationService.playSound(track, onPlaybackStatusUpdate);
       setActiveTrack(track);
       setIsPlaying(true);
-      await newSound.playAsync();
     } catch (error) {
       console.error('Error playing sound:', error);
     }
@@ -118,22 +49,16 @@ const MeditationGuides = () => {
   };
 
   const handlePlayPause = async () => {
-    if (sound) {
-      if (isPlaying) {
-        await sound.pauseAsync();
-      } else {
-        await sound.playAsync();
-      }
-      setIsPlaying(!isPlaying);
+    if (isPlaying) {
+      await meditationService.pauseSound();
+    } else {
+      await meditationService.resumeSound();
     }
+    setIsPlaying(!isPlaying);
   };
 
   const stopPlayback = async () => {
-    if (sound) {
-      await sound.stopAsync();
-      await sound.unloadAsync();
-    }
-    setSound(null);
+    await meditationService.stopSound();
     setActiveTrack(null);
     setIsPlaying(false);
     setProgress(0);

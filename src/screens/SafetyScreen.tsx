@@ -29,7 +29,7 @@ export default function SafetyScreen() {
         const location = await Location.getCurrentPositionAsync({});
         
         // Call emergency number
-        Linking.openURL('tel:911');
+        Linking.openURL('tel:10111');
         
         // Could implement sending location to trusted contacts here
         Alert.alert(
