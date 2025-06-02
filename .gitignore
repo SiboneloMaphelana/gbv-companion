@@ -31,10 +31,17 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env*.local
+.env.development
+.env.production
+.env.test
+
+# Config files with sensitive data
+src/config/keys.ts
+src/config/env.ts
 
 # typescript
 *.tsbuildinfo
 
-# New additions from the code block
 .env

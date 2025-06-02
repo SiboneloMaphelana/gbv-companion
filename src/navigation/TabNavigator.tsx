@@ -14,6 +14,7 @@ import SafetyScreen from '../screens/SafetyScreen';
 import RiskAssessmentScreen from '../screens/RiskAssessmentScreen';
 import EmergencyContactsScreen from '../screens/EmergencyContactsScreen';
 import MentalHealthScreen from '../screens/MentalHealthScreen';
+import { EmergencyScreen } from '../screens/EmergencyScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -71,6 +72,15 @@ export default function TabNavigator() {
         options={{
           tabBarIcon: ({ color, size }) => (
             <MaterialCommunityIcons name="shield" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen 
+        name="Emergency" 
+        component={EmergencyScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="hospital-marker" size={size} color={color} />
           ),
         }}
       />
