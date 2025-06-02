@@ -1,6 +1,158 @@
 import * as SecureStore from 'expo-secure-store';
 import * as Crypto from 'expo-crypto';
+import { Platform } from 'react-native';
 import { APP_CONFIG } from '../config/app.config';
+
+class SecurityManager {
+  private static instance: SecurityManager;
+  private readonly ENCRYPTION_KEY = 'gbv_companion_key';
+
+  private constructor() {}
+
+  static getInstance(): SecurityManager {
+    if (!SecurityManager.instance) {
+      SecurityManager.instance = new SecurityManager();
+    }
+    return SecurityManager.instance;
+  }
+
+  async encryptData(data: string): Promise<string> {
+    try {
+      const key = await this.getOrCreateKey();
+      const iv = await Crypto.getRandomBytesAsync(16);
+      const encrypted = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        data + key
+      );
+      return `${encrypted}.${iv.join(',')}`;
+    } catch (error) {
+      console.error('Encryption error:', error);
+      throw new Error('Failed to encrypt data');
+    }
+  }
+
+  async decryptData(encryptedData: string): Promise<string | null> {
+    try {
+      const [data, iv] = encryptedData.split('.');
+      if (!data || !iv) return null;
+
+      const key = await this.getOrCreateKey();
+      const decrypted = await Crypto.digestStringAsync(
+        Crypto.CryptoDigestAlgorithm.SHA256,
+        data + key
+      );
+      return decrypted;
+    } catch (error) {
+      console.error('Decryption error:', error);
+      return null;
+    }
+  }
+
+  private async getOrCreateKey(): Promise<string> {
+    try {
+      let key = await SecureStore.getItemAsync(this.ENCRYPTION_KEY);
+      if (!key) {
+        key = (await Crypto.getRandomBytesAsync(32)).join(',');
+        await SecureStore.setItemAsync(this.ENCRYPTION_KEY, key);
+      }
+      return key;
+    } catch (error) {
+      console.error('Key generation error:', error);
+      throw new Error('Failed to generate encryption key');
+    }
+  }
+
+  async secureStore(key: string, value: string): Promise<void> {
+    try {
+      const encryptedValue = await this.encryptData(value);
+      await SecureStore.setItemAsync(key, encryptedValue);
+    } catch (error) {
+      console.error('Secure store error:', error);
+      throw new Error('Failed to store data securely');
+    }
+  }
+
+  async secureRetrieve(key: string): Promise<string | null> {
+    try {
+      const encryptedValue = await SecureStore.getItemAsync(key);
+      if (!encryptedValue) return null;
+      return this.decryptData(encryptedValue);
+    } catch (error) {
+      console.error('Secure retrieve error:', error);
+      return null;
+    }
+  }
+
+  async secureDelete(key: string): Promise<void> {
+    try {
+      await SecureStore.deleteItemAsync(key);
+    } catch (error) {
+      console.error('Secure delete error:', error);
+      throw new Error('Failed to delete data');
+    }
+  }
+
+  sanitizeInput(input: string): string {
+    // Remove potentially dangerous characters and limit length
+    return input
+      .replace(/[<>{}]/g, '')
+      .replace(/[&]/g, 'and')
+      .trim()
+      .slice(0, 1000);
+  }
+
+  validateEmail(email: string): boolean {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
+  }
+
+  validatePhone(phone: string): boolean {
+    const phoneRegex = /^\+?[\d\s-]{10,}$/;
+    return phoneRegex.test(phone);
+  }
+
+  async generateHash(data: string): Promise<string> {
+    return Crypto.digestStringAsync(
+      Crypto.CryptoDigestAlgorithm.SHA256,
+      data
+    );
+  }
+
+  // Session management
+  private readonly SESSION_KEY = 'active_session';
+  private readonly SESSION_DURATION = 30 * 60 * 1000; // 30 minutes
+
+  async createSession(userId: string): Promise<void> {
+    const session = {
+      userId,
+      timestamp: Date.now(),
+      expiresAt: Date.now() + this.SESSION_DURATION,
+    };
+    await this.secureStore(this.SESSION_KEY, JSON.stringify(session));
+  }
+
+  async validateSession(): Promise<boolean> {
+    const sessionData = await this.secureRetrieve(this.SESSION_KEY);
+    if (!sessionData) return false;
+
+    try {
+      const session = JSON.parse(sessionData);
+      if (Date.now() > session.expiresAt) {
+        await this.secureDelete(this.SESSION_KEY);
+        return false;
+      }
+      return true;
+    } catch {
+      return false;
+    }
+  }
+
+  async clearSession(): Promise<void> {
+    await this.secureDelete(this.SESSION_KEY);
+  }
+}
+
+export const securityManager = SecurityManager.getInstance();
 
 /**
  * Encrypts and stores data securely

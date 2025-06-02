@@ -20,18 +20,35 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [useBiometrics, setUseBiometrics] = useState(false);
 
   useEffect(() => {
-    checkAuth();
+    checkInitialAuth();
   }, []);
 
-  const checkAuth = async () => {
+  const checkBiometricSupport = async () => {
+    try {
+      const hasHardware = await LocalAuthentication.hasHardwareAsync();
+      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
+      const supportedTypes = await LocalAuthentication.supportedAuthenticationTypesAsync();
+      
+      return hasHardware && 
+             isEnrolled && 
+             supportedTypes.includes(LocalAuthentication.AuthenticationType.FINGERPRINT);
+    } catch (error) {
+      console.error('Error checking fingerprint support:', error);
+      return false;
+    }
+  };
+
+  const checkInitialAuth = async () => {
     try {
       const hasBiometrics = await SecureStore.getItemAsync('useBiometrics');
       setUseBiometrics(hasBiometrics === 'true');
 
       if (hasBiometrics === 'true') {
         const result = await LocalAuthentication.authenticateAsync({
-          promptMessage: 'Authenticate to access the app',
+          promptMessage: 'Verify your fingerprint',
           fallbackLabel: 'Use PIN instead',
+          disableDeviceFallback: false,
+          cancelLabel: 'Cancel',
         });
         
         if (result.success) {
@@ -47,6 +64,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (pin: string): Promise<boolean> => {
     try {
+      if (pin === '') {
+        // This is a biometric login
+        setIsAuthenticated(true);
+        return true;
+      }
+
       const storedPin = await SecureStore.getItemAsync('userPin');
       const isValid = storedPin === pin;
       
@@ -80,18 +103,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const toggleBiometrics = async () => {
     try {
-      const hasHardware = await LocalAuthentication.hasHardwareAsync();
-      const isEnrolled = await LocalAuthentication.isEnrolledAsync();
-
-      if (hasHardware && isEnrolled) {
+      const hasFingerprint = await checkBiometricSupport();
+      if (hasFingerprint) {
         const newValue = !useBiometrics;
         await SecureStore.setItemAsync('useBiometrics', newValue.toString());
         setUseBiometrics(newValue);
       } else {
-        throw new Error('Biometric authentication not available');
+        throw new Error('Fingerprint authentication not available');
       }
     } catch (error) {
-      console.error('Toggle biometrics error:', error);
+      console.error('Toggle fingerprint error:', error);
     }
   };
 

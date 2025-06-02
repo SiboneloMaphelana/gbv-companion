@@ -1,59 +1,107 @@
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet } from 'react-native';
-import { TextInput, Button, Title, Text } from 'react-native-paper';
+import { TextInput, Button, Title, Text, Card, IconButton } from 'react-native-paper';
 import * as LocalAuthentication from 'expo-local-authentication';
 import { useAuth } from '../../context/AuthContext';
 
 export default function LoginScreen() {
+  const [showPinInput, setShowPinInput] = useState(false);
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
   const { signIn, useBiometrics } = useAuth();
 
-  useEffect(() => {
-    if (useBiometrics) {
-      authenticateWithBiometrics();
+  const handleAuthenticationSuccess = async () => {
+    try {
+      const success = await signIn('');
+      if (!success) {
+        setError('Authentication failed');
+      }
+    } catch (error) {
+      console.error('Authentication success handling error:', error);
+      setError('Failed to complete authentication');
     }
-  }, []);
+  };
 
   const authenticateWithBiometrics = async () => {
     try {
+      setError('');
       const result = await LocalAuthentication.authenticateAsync({
-        promptMessage: 'Authenticate to access the app',
+        promptMessage: 'Authenticate with fingerprint',
         fallbackLabel: 'Use PIN instead',
+        disableDeviceFallback: false,
+        cancelLabel: 'Cancel',
       });
 
       if (result.success) {
-        // The biometric authentication is handled in the AuthContext
-        // This is just a fallback in case the context didn't catch it
-        signIn('');
+        await handleAuthenticationSuccess();
+      } else if (result.error) {
+        setError('Fingerprint authentication failed');
       }
     } catch (error) {
-      console.error('Biometric auth error:', error);
+      console.error('Fingerprint auth error:', error);
+      setError('Fingerprint authentication failed');
     }
   };
 
   const handleLogin = async () => {
-    if (pin.length < 4) {
-      setError('PIN must be at least 4 digits');
-      return;
-    }
-
     try {
+      setError('');
+      if (pin.length < 4) {
+        setError('PIN must be at least 4 digits');
+        return;
+      }
+
       const success = await signIn(pin);
       if (!success) {
         setError('Invalid PIN');
+        setPin('');
       }
     } catch (error) {
+      console.error('Login error:', error);
       setError('Failed to sign in');
+      setPin('');
     }
   };
 
-  return (
-    <View style={styles.container}>
+  const renderLoginOptions = () => (
+    <View style={styles.optionsContainer}>
       <Title style={styles.title}>Welcome Back</Title>
-      <Text style={styles.subtitle}>
-        Enter your PIN to access the app
-      </Text>
+      <Text style={styles.subtitle}>Choose how you'd like to sign in</Text>
+
+      <Card style={styles.optionCard} onPress={() => setShowPinInput(true)}>
+        <Card.Content style={styles.cardContent}>
+          <IconButton icon="pin" size={30} />
+          <Text style={styles.optionText}>Sign in with PIN</Text>
+        </Card.Content>
+      </Card>
+
+      {useBiometrics && (
+        <Card style={styles.optionCard} onPress={authenticateWithBiometrics}>
+          <Card.Content style={styles.cardContent}>
+            <IconButton icon="fingerprint" size={30} />
+            <Text style={styles.optionText}>Sign in with Fingerprint</Text>
+          </Card.Content>
+        </Card>
+      )}
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </View>
+  );
+
+  const renderPinInput = () => (
+    <View style={styles.container}>
+      <IconButton
+        icon="arrow-left"
+        size={24}
+        style={styles.backButton}
+        onPress={() => {
+          setShowPinInput(false);
+          setPin('');
+          setError('');
+        }}
+      />
+      
+      <Title style={styles.title}>Enter PIN</Title>
 
       <TextInput
         style={styles.input}
@@ -62,7 +110,8 @@ export default function LoginScreen() {
         maxLength={6}
         value={pin}
         onChangeText={setPin}
-        placeholder="Enter PIN"
+        placeholder="Enter your PIN"
+        autoFocus
       />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -73,25 +122,25 @@ export default function LoginScreen() {
         style={styles.button}
         disabled={!pin}
       >
-        Login
+        Sign In
       </Button>
+    </View>
+  );
 
-      {useBiometrics && (
-        <Button
-          mode="outlined"
-          onPress={authenticateWithBiometrics}
-          style={styles.biometricButton}
-          icon="fingerprint"
-        >
-          Use Biometrics
-        </Button>
-      )}
+  return (
+    <View style={styles.container}>
+      {showPinInput ? renderPinInput() : renderLoginOptions()}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#f5f5f5',
+  },
+  optionsContainer: {
     flex: 1,
     padding: 20,
     justifyContent: 'center',
@@ -103,8 +152,22 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     textAlign: 'center',
-    marginBottom: 20,
+    marginBottom: 30,
     color: '#666',
+  },
+  optionCard: {
+    marginVertical: 10,
+    elevation: 2,
+  },
+  cardContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 16,
+  },
+  optionText: {
+    fontSize: 16,
+    marginLeft: 10,
   },
   input: {
     marginBottom: 15,
@@ -112,12 +175,13 @@ const styles = StyleSheet.create({
   button: {
     marginTop: 20,
   },
-  biometricButton: {
-    marginTop: 10,
-  },
   error: {
     color: '#B00020',
     textAlign: 'center',
     marginTop: 10,
+  },
+  backButton: {
+    marginLeft: -8,
+    marginBottom: 16,
   },
 }); 

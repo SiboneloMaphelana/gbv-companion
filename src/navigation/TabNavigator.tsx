@@ -1,15 +1,19 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { DefaultTheme } from 'react-native-paper';
 import { IconButton } from 'react-native-paper';
+import { DefaultTheme } from 'react-native-paper';
 import { useAuth } from '../context/AuthContext';
+import { MaterialCommunityIcons } from '@expo/vector-icons';
 
 // Import screens
 import LegalGuidanceScreen from '../screens/LegalGuidanceScreen';
 import JournalScreen from '../screens/JournalScreen';
 import ResourcesScreen from '../screens/ResourcesScreen';
 import SafetyScreen from '../screens/SafetyScreen';
+import RiskAssessmentScreen from '../screens/RiskAssessmentScreen';
+import EmergencyContactsScreen from '../screens/EmergencyContactsScreen';
+import MentalHealthScreen from '../screens/MentalHealthScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -48,31 +52,16 @@ export default function TabNavigator() {
   };
 
   return (
-    <Tab.Navigator screenOptions={screenOptions}>
+    <Tab.Navigator 
+      screenOptions={screenOptions}
+      initialRouteName="Safety"
+    >
       <Tab.Screen 
-        name="Legal Guide" 
-        component={LegalGuidanceScreen}
+        name="Risk Check" 
+        component={RiskAssessmentScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="book-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen 
-        name="Journal" 
-        component={JournalScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="journal-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tab.Screen 
-        name="Resources" 
-        component={ResourcesScreen}
-        options={{
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="people-outline" size={size} color={color} />
+            <Ionicons name="analytics-outline" size={size} color={color} />
           ),
         }}
       />
@@ -81,7 +70,52 @@ export default function TabNavigator() {
         component={SafetyScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name="shield-outline" size={size} color={color} />
+            <MaterialCommunityIcons name="shield" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen 
+        name="Mental Health" 
+        component={MentalHealthScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="heart-pulse" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen 
+        name="Legal Guide" 
+        component={LegalGuidanceScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="scale-balance" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen 
+        name="Journal" 
+        component={JournalScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="book" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen 
+        name="Resources" 
+        component={ResourcesScreen}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="help-circle" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="Contacts"
+        component={EmergencyContactsScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="phone-alert" size={24} color={color} />
           ),
         }}
       />
