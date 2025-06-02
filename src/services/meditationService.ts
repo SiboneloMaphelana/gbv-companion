@@ -6,6 +6,7 @@ export interface Track {
   id: string;
   title: string;
   subtitle: string;
+  artist: string;
   duration: string;
   url: string;
   category: string;
@@ -17,6 +18,11 @@ export interface MeditationSession {
   description: string;
   category: string;
   tracks: Track[];
+}
+
+export interface SearchResult {
+  type: 'artist' | 'track';
+  sessions: MeditationSession[];
 }
 
 export type Category = {
@@ -74,12 +80,12 @@ export class MeditationService {
         id: hit.track.key,
         title: hit.track.title,
         subtitle: hit.track.subtitle,
+        artist: hit.track.subtitle,
         duration: '5 min',
         url: hit.track.hub.actions?.[1]?.uri || '',
         category: this.assignCategory(hit.track.title.toLowerCase())
       }));
 
-      // Group tracks by category
       return this.groupTracksByCategory(this.cachedTracks);
     } catch (error) {
       console.error('Error fetching tracks:', error);
@@ -95,7 +101,7 @@ export class MeditationService {
     } else if (title.includes('mindful') || title.includes('zen') || title.includes('peace')) {
       return 'mindfulness';
     }
-    return 'stress-relief'; // default category
+    return 'stress-relief';
   }
 
   private groupTracksByCategory(tracks: Track[]): MeditationSession[] {
@@ -108,17 +114,93 @@ export class MeditationService {
     }));
   }
 
-  searchTracks(query: string): MeditationSession[] {
-    if (!query) {
-      return this.groupTracksByCategory(this.cachedTracks);
+  async searchByArtist(query: string): Promise<SearchResult> {
+    const options = {
+      method: 'GET',
+      url: 'https://shazam.p.rapidapi.com/search',
+      params: {
+        term: query,
+        locale: 'en-US',
+        offset: '0',
+        limit: '5'
+      },
+      headers: {
+        'X-RapidAPI-Key': config.api.shazam.key,
+        'X-RapidAPI-Host': 'shazam.p.rapidapi.com'
+      }
+    };
+
+    try {
+      const response = await axios.request(options);
+      const artistTracks = response.data.tracks.hits
+        .filter((hit: any) => 
+          hit.track.subtitle.toLowerCase().includes(query.toLowerCase()))
+        .slice(0, 5)
+        .map((hit: any) => ({
+          id: hit.track.key,
+          title: hit.track.title,
+          subtitle: hit.track.subtitle,
+          artist: hit.track.subtitle,
+          duration: '5 min',
+          url: hit.track.hub.actions?.[1]?.uri || '',
+          category: this.assignCategory(hit.track.title.toLowerCase())
+        }));
+
+      return {
+        type: 'artist',
+        sessions: [{
+          id: 'artist-results',
+          title: `Songs by ${query}`,
+          description: `Top 5 meditation tracks by ${query}`,
+          category: 'artist-search',
+          tracks: artistTracks
+        }]
+      };
+    } catch (error) {
+      console.error('Error searching by artist:', error);
+      throw error;
     }
+  }
 
-    const filteredTracks = this.cachedTracks.filter(track =>
-      track.title.toLowerCase().includes(query.toLowerCase()) ||
-      track.subtitle.toLowerCase().includes(query.toLowerCase())
-    );
+  async searchByTrack(query: string): Promise<SearchResult> {
+    const options = {
+      method: 'GET',
+      url: 'https://shazam.p.rapidapi.com/search',
+      params: {
+        term: query,
+        locale: 'en-US',
+        offset: '0',
+        limit: '10'
+      },
+      headers: {
+        'X-RapidAPI-Key': config.api.shazam.key,
+        'X-RapidAPI-Host': 'shazam.p.rapidapi.com'
+      }
+    };
 
-    return this.groupTracksByCategory(filteredTracks);
+    try {
+      const response = await axios.request(options);
+      const tracks = response.data.tracks.hits
+        .filter((hit: any) => 
+          hit.track.title.toLowerCase().includes(query.toLowerCase()))
+        .map((hit: any) => ({
+          id: hit.track.key,
+          title: hit.track.title,
+          subtitle: hit.track.subtitle,
+          artist: hit.track.subtitle,
+          duration: '5 min',
+          url: hit.track.hub.actions?.[1]?.uri || '',
+          category: this.assignCategory(hit.track.title.toLowerCase())
+        }));
+
+      return {
+        type: 'track',
+        sessions: this.groupTracksByCategory(tracks)
+      };
+    } catch (error) {
+      console.error('Error searching by track:', error);
+      throw error;
+    }
   }
 
   async playSound(track: Track, onPlaybackStatusUpdate: (status: any) => void): Promise<void> {

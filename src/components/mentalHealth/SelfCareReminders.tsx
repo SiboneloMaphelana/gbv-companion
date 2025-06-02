@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, Alert } from 'react-native';
 import { Card, Switch, Button, TextInput, FAB } from 'react-native-paper';
 import { TimePickerModal } from 'react-native-paper-dates';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { registerForPushNotificationsAsync, scheduleDailyReminder, cancelReminder, ReminderNotification } from '../../utils/notifications';
+import { registerForPushNotificationsAsync, scheduleDailyReminder, cancelReminder, } from '../../utils/notifications';
 
 interface SelfCareActivity {
   id: string;
