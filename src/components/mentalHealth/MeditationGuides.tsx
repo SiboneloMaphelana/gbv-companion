@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-nat
 import { Card, Button, IconButton, ProgressBar } from 'react-native-paper';
 import axios from 'axios';
 import { Audio } from 'expo-av';
-import { config } from '../../config/env';
+import { config } from '../../config/config';
 
 interface Track {
   id: string;
@@ -49,7 +49,7 @@ const MeditationGuides = () => {
         limit: '5'
       },
       headers: {
-        'X-RapidAPI-Key': config.shazamApiKey,
+        'X-RapidAPI-Key': config.api.shazam.key,
         'X-RapidAPI-Host': 'shazam.p.rapidapi.com'
       }
     };

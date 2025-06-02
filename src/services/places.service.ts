@@ -1,4 +1,4 @@
-import { GOOGLE_PLACES_API_KEY } from '../config/keys';
+import { config } from '../config/config';
 import type { LocationCoordinates } from './location.service';
 
 export interface Place {
@@ -26,7 +26,7 @@ class PlacesService {
     { type: 'embassy', label: 'Embassies' }
   ];
 
-  private readonly SEARCH_RADIUS = 5000; // 5km radius
+  private readonly SEARCH_RADIUS = config.emergency.searchRadius;
 
   async fetchNearbyPlaces(location: LocationCoordinates): Promise<Place[]> {
     try {
@@ -46,7 +46,7 @@ class PlacesService {
     location: LocationCoordinates,
     type: PlaceType['type']
   ): Promise<Place[]> {
-    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.latitude},${location.longitude}&radius=${this.SEARCH_RADIUS}&type=${type}&key=${GOOGLE_PLACES_API_KEY}`;
+    const url = `https://maps.googleapis.com/maps/api/place/nearbysearch/json?location=${location.latitude},${location.longitude}&radius=${this.SEARCH_RADIUS}&type=${type}&key=${config.api.google.places}`;
 
     const response = await fetch(url);
     const data = await response.json();

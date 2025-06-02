@@ -30,18 +30,13 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# Environment and configuration files
 .env
 .env*.local
 .env.development
 .env.production
 .env.test
-
-# Config files with sensitive data
-src/config/keys.ts
-src/config/env.ts
+src/config/config.ts
 
 # typescript
 *.tsbuildinfo
-
-.env
