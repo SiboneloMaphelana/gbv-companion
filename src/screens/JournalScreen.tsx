@@ -37,12 +37,10 @@ export default function JournalScreen() {
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isRecording) {
-      // Start the recording duration counter
       interval = setInterval(() => {
         setRecordingDuration(prev => prev + 1);
       }, 1000);
 
-      // Start the pulse animation
       Animated.loop(
         Animated.sequence([
           Animated.timing(pulseAnim, {
@@ -303,7 +301,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f6f6f6',
   },
   recordCard: {
-    margin: 18,
+    margin: 16,
     elevation: 4,
   },
   recordButton: {
@@ -313,8 +311,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   entryCard: {
-    marginHorizontal: 8,
-    marginBottom: 6,
+    marginHorizontal: 16,
+    marginBottom: 8,
     elevation: 1,
   },
   cardContent: {
