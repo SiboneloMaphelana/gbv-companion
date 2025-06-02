@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, ActivityIndicator } from 'react-native';
-import { Card, Button, IconButton, ProgressBar } from 'react-native-paper';
-import { meditationService, Track, MeditationSession } from '../../services/meditationService';
+import { Card, Button, IconButton, ProgressBar, Searchbar, Chip } from 'react-native-paper';
+import { meditationService, Track, MeditationSession, CATEGORIES } from '../../services/meditationService';
 
 const MeditationGuides = () => {
   const [sessions, setSessions] = useState<MeditationSession[]>([]);
@@ -9,6 +9,9 @@ const MeditationGuides = () => {
   const [progress, setProgress] = useState(0);
   const [loading, setLoading] = useState(true);
   const [isPlaying, setIsPlaying] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [isLoadingAudio, setIsLoadingAudio] = useState(false);
 
   useEffect(() => {
     fetchMeditationTracks();
@@ -28,13 +31,34 @@ const MeditationGuides = () => {
     }
   };
 
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+    const filteredSessions = meditationService.searchTracks(query);
+    setSessions(filteredSessions);
+  };
+
+  const filterByCategory = (categoryId: string | null) => {
+    setSelectedCategory(categoryId);
+    if (!categoryId) {
+      const allSessions = meditationService.searchTracks(searchQuery);
+      setSessions(allSessions);
+      return;
+    }
+    
+    const filteredSessions = sessions.filter(session => session.category === categoryId);
+    setSessions(filteredSessions);
+  };
+
   const playSound = async (track: Track) => {
     try {
+      setIsLoadingAudio(true);
       await meditationService.playSound(track, onPlaybackStatusUpdate);
       setActiveTrack(track);
       setIsPlaying(true);
     } catch (error) {
       console.error('Error playing sound:', error);
+    } finally {
+      setIsLoadingAudio(false);
     }
   };
 
@@ -75,6 +99,33 @@ const MeditationGuides = () => {
 
   return (
     <ScrollView style={styles.container}>
+      <Searchbar
+        placeholder="Search meditation tracks"
+        onChangeText={handleSearch}
+        value={searchQuery}
+        style={styles.searchBar}
+      />
+
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryContainer}>
+        <Chip
+          selected={selectedCategory === null}
+          onPress={() => filterByCategory(null)}
+          style={styles.categoryChip}
+        >
+          All
+        </Chip>
+        {CATEGORIES.map(category => (
+          <Chip
+            key={category.id}
+            selected={selectedCategory === category.id}
+            onPress={() => filterByCategory(category.id)}
+            style={styles.categoryChip}
+          >
+            {category.name}
+          </Chip>
+        ))}
+      </ScrollView>
+
       {activeTrack ? (
         <View style={styles.activeSession}>
           <Card style={styles.activeCard}>
@@ -92,11 +143,15 @@ const MeditationGuides = () => {
                   size={30}
                   onPress={() => setProgress(Math.max(0, progress - 0.1))}
                 />
-                <IconButton
-                  icon={isPlaying ? "pause" : "play"}
-                  size={40}
-                  onPress={handlePlayPause}
-                />
+                {isLoadingAudio ? (
+                  <ActivityIndicator size="large" color="#6200ee" />
+                ) : (
+                  <IconButton
+                    icon={isPlaying ? "pause" : "play"}
+                    size={40}
+                    onPress={handlePlayPause}
+                  />
+                )}
                 <IconButton
                   icon="stop"
                   size={40}
@@ -126,6 +181,8 @@ const MeditationGuides = () => {
                       mode="outlined"
                       onPress={() => playSound(track)}
                       style={styles.trackButton}
+                      loading={isLoadingAudio}
+                      disabled={isLoadingAudio}
                     >
                       {track.title}
                     </Button>
@@ -145,6 +202,17 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     padding: 16,
+  },
+  searchBar: {
+    marginBottom: 16,
+    elevation: 2,
+  },
+  categoryContainer: {
+    flexDirection: 'row',
+    marginBottom: 16,
+  },
+  categoryChip: {
+    marginRight: 8,
   },
   loadingContainer: {
     flex: 1,

@@ -8,27 +8,59 @@ export interface Track {
   subtitle: string;
   duration: string;
   url: string;
+  category: string;
 }
 
 export interface MeditationSession {
   id: string;
   title: string;
   description: string;
+  category: string;
   tracks: Track[];
 }
 
+export type Category = {
+  id: string;
+  name: string;
+  description: string;
+};
+
+export const CATEGORIES: Category[] = [
+  {
+    id: 'stress-relief',
+    name: 'Stress Relief',
+    description: 'Calming sounds to help reduce stress and anxiety'
+  },
+  {
+    id: 'sleep',
+    name: 'Sleep',
+    description: 'Peaceful melodies to help you fall asleep'
+  },
+  {
+    id: 'focus',
+    name: 'Focus',
+    description: 'Background sounds to improve concentration'
+  },
+  {
+    id: 'mindfulness',
+    name: 'Mindfulness',
+    description: 'Gentle music for mindfulness practice'
+  }
+];
+
 export class MeditationService {
   private sound: Audio.Sound | null = null;
+  private cachedTracks: Track[] = [];
 
-  async fetchMeditationTracks(): Promise<MeditationSession[]> {
+  async fetchMeditationTracks(searchTerm: string = ''): Promise<MeditationSession[]> {
     const options = {
       method: 'GET',
       url: 'https://shazam.p.rapidapi.com/search',
       params: {
-        term: 'meditation music relaxation',
+        term: searchTerm || 'meditation music relaxation',
         locale: 'en-US',
         offset: '0',
-        limit: '5'
+        limit: '20'
       },
       headers: {
         'X-RapidAPI-Key': config.api.shazam.key,
@@ -38,33 +70,55 @@ export class MeditationService {
 
     try {
       const response = await axios.request(options);
-      const tracks = response.data.tracks.hits.map((hit: any) => ({
+      this.cachedTracks = response.data.tracks.hits.map((hit: any) => ({
         id: hit.track.key,
         title: hit.track.title,
         subtitle: hit.track.subtitle,
         duration: '5 min',
-        url: hit.track.hub.actions?.[1]?.uri || ''
+        url: hit.track.hub.actions?.[1]?.uri || '',
+        category: this.assignCategory(hit.track.title.toLowerCase())
       }));
 
-      // Group tracks into meditation sessions
-      return [
-        {
-          id: '1',
-          title: 'Stress Relief',
-          description: 'Calming sounds to help reduce stress and anxiety',
-          tracks: tracks.slice(0, 3)
-        },
-        {
-          id: '2',
-          title: 'Deep Relaxation',
-          description: 'Peaceful melodies for deep relaxation and inner peace',
-          tracks: tracks.slice(3, 6)
-        },
-      ];
+      // Group tracks by category
+      return this.groupTracksByCategory(this.cachedTracks);
     } catch (error) {
       console.error('Error fetching tracks:', error);
       throw error;
     }
+  }
+
+  private assignCategory(title: string): string {
+    if (title.includes('sleep') || title.includes('night') || title.includes('dream')) {
+      return 'sleep';
+    } else if (title.includes('focus') || title.includes('concentration') || title.includes('study')) {
+      return 'focus';
+    } else if (title.includes('mindful') || title.includes('zen') || title.includes('peace')) {
+      return 'mindfulness';
+    }
+    return 'stress-relief'; // default category
+  }
+
+  private groupTracksByCategory(tracks: Track[]): MeditationSession[] {
+    return CATEGORIES.map(category => ({
+      id: category.id,
+      title: category.name,
+      description: category.description,
+      category: category.id,
+      tracks: tracks.filter(track => track.category === category.id)
+    }));
+  }
+
+  searchTracks(query: string): MeditationSession[] {
+    if (!query) {
+      return this.groupTracksByCategory(this.cachedTracks);
+    }
+
+    const filteredTracks = this.cachedTracks.filter(track =>
+      track.title.toLowerCase().includes(query.toLowerCase()) ||
+      track.subtitle.toLowerCase().includes(query.toLowerCase())
+    );
+
+    return this.groupTracksByCategory(filteredTracks);
   }
 
   async playSound(track: Track, onPlaybackStatusUpdate: (status: any) => void): Promise<void> {
