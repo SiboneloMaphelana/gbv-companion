@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
-import { Text, Card, Button, RadioButton, Title, Divider, List } from 'react-native-paper';
+import { Text, Card, Button, RadioButton, Title, Divider, List, Portal, Modal } from 'react-native-paper';
 import { useNavigation } from '@react-navigation/native';
+import SafetyAssistant from '../components/SafetyAssistant';
 
 interface Question {
   id: string;
@@ -99,6 +100,7 @@ export default function RiskAssessmentScreen() {
   const [answers, setAnswers] = useState<Record<string, string>>({});
   const [showResults, setShowResults] = useState(false);
   const [riskLevel, setRiskLevel] = useState<'high' | 'medium' | 'low' | null>(null);
+  const [showSafetyAssistant, setShowSafetyAssistant] = useState(false);
   const navigation = useNavigation();
 
   const calculateRiskLevel = () => {
@@ -133,6 +135,9 @@ export default function RiskAssessmentScreen() {
     const level = calculateRiskLevel();
     setRiskLevel(level);
     setShowResults(true);
+    if (level === 'high') {
+      setShowSafetyAssistant(true);
+    }
   };
 
   const handleStartOver = () => {
@@ -199,6 +204,17 @@ export default function RiskAssessmentScreen() {
           </Card.Content>
         </Card>
 
+        {riskLevel === 'high' && (
+          <Button
+            mode="contained"
+            onPress={() => setShowSafetyAssistant(true)}
+            style={[styles.button, styles.assistantButton]}
+            icon="robot"
+          >
+            Talk to Safety Assistant
+          </Button>
+        )}
+
         <Button
           mode="contained"
           onPress={navigateToSafety}
@@ -219,10 +235,22 @@ export default function RiskAssessmentScreen() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <Title style={styles.title}>Risk Assessment</Title>
-      {!showResults ? renderQuestions() : renderResults()}
-    </ScrollView>
+    <>
+      <ScrollView style={styles.container}>
+        <Title style={styles.title}>Risk Assessment</Title>
+        {!showResults ? renderQuestions() : renderResults()}
+      </ScrollView>
+
+      <Portal>
+        <Modal
+          visible={showSafetyAssistant}
+          onDismiss={() => setShowSafetyAssistant(false)}
+          contentContainerStyle={styles.modalContainer}
+        >
+          <SafetyAssistant />
+        </Modal>
+      </Portal>
+    </>
   );
 }
 
@@ -279,5 +307,13 @@ const styles = StyleSheet.create({
   },
   lowRisk: {
     backgroundColor: '#e8f5e9',
+  },
+  modalContainer: {
+    flex: 1,
+    backgroundColor: 'white',
+    margin: 0,
+  },
+  assistantButton: {
+    backgroundColor: '#1976d2',
   },
 }); 
