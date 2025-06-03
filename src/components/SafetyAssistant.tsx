@@ -10,44 +10,27 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  ActivityIndicator,
 } from 'react-native';
 import { Surface } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
-import { generateSafetyResponse } from '../services/gemini';
 
 interface Message {
   id: string;
   text: string;
   sender: 'user' | 'assistant';
-  timestamp?: Date;
 }
 
-const INITIAL_MESSAGE: Message = {
-  id: '1',
-  text: "Hello, I'm your AI Safety Assistant. I'm here to help you with:\n\n• Creating safety plans\n• Finding emergency resources\n• Understanding your rights\n• Connecting with support services\n\nHow can I assist you today?",
-  sender: 'assistant',
-  timestamp: new Date(),
-};
-
-const EMERGENCY_RESOURCES = `EMERGENCY RESOURCES:
-
-🚨 Police: 10111
-🏥 Ambulance: 10177
-📞 GBV Command Centre: 0800 428 428
-
-If you're in immediate danger:
-1. Call emergency services immediately
-2. Try to move to a safe location
-3. Make noise to alert neighbors
-4. Use your emergency code word if you have one`;
-
 const SafetyAssistantScreen = () => {
-  const [messages, setMessages] = useState<Message[]>([INITIAL_MESSAGE]);
+  const [messages, setMessages] = useState<Message[]>([
+    {
+      id: '1',
+      text: 'Hi there! I am your Safety Assistant. How can I help you today?',
+      sender: 'assistant',
+    },
+  ]);
   const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(42);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const flatListRef = useRef<FlatList>(null);
 
   useEffect(() => {
@@ -65,60 +48,26 @@ const SafetyAssistantScreen = () => {
     };
   }, []);
 
-  const handleSend = async () => {
-    if (inputText.trim().length === 0 || isLoading) return;
-
-    const userMessage: Message = {
+  const handleSend = () => {
+    if (inputText.trim().length === 0) return;
+    const newMessage: Message = {
       id: Date.now().toString(),
-      text: inputText.trim(),
+      text: inputText,
       sender: 'user',
-      timestamp: new Date(),
     };
-
-    setMessages(prev => [...prev, userMessage]);
+    setMessages((prevMessages) => [...prevMessages, newMessage]);
     setInputText('');
     setInputHeight(42);
-    setIsLoading(true);
 
-    try {
-      // Convert messages to the format expected by Gemini
-      const conversationHistory = messages.map(msg => ({
-        role: msg.sender,
-        content: msg.text
-      }));
-
-      // Get AI response
-      const response = await generateSafetyResponse(inputText, conversationHistory);
-
-      const assistantMessage: Message = {
-        id: Date.now().toString() + '-response',
-        text: response.message,
+    // Simulate assistant reply
+    setTimeout(() => {
+      const reply: Message = {
+        id: Date.now().toString() + '-r',
+        text: 'Thank you for your message. Help is on the way.',
         sender: 'assistant',
-        timestamp: new Date(),
       };
-
-      setMessages(prev => [...prev, assistantMessage]);
-    } catch (error) {
-      const errorMessage: Message = {
-        id: Date.now().toString() + '-error',
-        text: "I'm having trouble connecting. For immediate help, please call emergency services at 10111 or the GBV Command Centre at 0800 428 428.",
-        sender: 'assistant',
-        timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, errorMessage]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleEmergency = () => {
-    const emergencyMessage: Message = {
-      id: Date.now().toString(),
-      text: EMERGENCY_RESOURCES,
-      sender: 'assistant',
-      timestamp: new Date(),
-    };
-    setMessages(prev => [...prev, emergencyMessage]);
+      setMessages((prevMessages) => [...prevMessages, reply]);
+    }, 1000);
   };
 
   const renderItem = ({ item }: { item: Message }) => (
@@ -139,16 +88,6 @@ const SafetyAssistantScreen = () => {
     </Surface>
   );
 
-  const renderFooter = () => {
-    if (!isLoading) return null;
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="small" color="#007bff" />
-        <Text style={styles.loadingText}>Assistant is typing...</Text>
-      </View>
-    );
-  };
-
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -161,7 +100,7 @@ const SafetyAssistantScreen = () => {
             <Text style={styles.header}>Safety Assistant</Text>
           </View>
         ) : (
-          <TouchableOpacity style={styles.emergencyButton} onPress={handleEmergency}>
+          <TouchableOpacity style={styles.emergencyButton}>
             <Text style={styles.emergencyButtonText}>Emergency Resources</Text>
           </TouchableOpacity>
         )}
@@ -175,7 +114,6 @@ const SafetyAssistantScreen = () => {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
           keyboardShouldPersistTaps="handled"
-          ListFooterComponent={renderFooter}
         />
 
         <View style={styles.inputWrapper}>
@@ -189,18 +127,12 @@ const SafetyAssistantScreen = () => {
               returnKeyType="send"
               multiline
               blurOnSubmit={false}
-              editable={!isLoading}
               onContentSizeChange={(e) =>
                 setInputHeight(e.nativeEvent.contentSize.height)
               }
             />
-            <TouchableOpacity onPress={handleSend} disabled={isLoading || !inputText.trim()}>
-              <Ionicons 
-                name="send" 
-                size={24} 
-                color={isLoading || !inputText.trim() ? '#ccc' : '#007bff'} 
-                style={styles.sendIcon} 
-              />
+            <TouchableOpacity onPress={handleSend}>
+              <Ionicons name="send" size={24} color="#007bff" style={styles.sendIcon} />
             </TouchableOpacity>
           </View>
         </View>
@@ -248,31 +180,23 @@ const styles = StyleSheet.create({
     marginVertical: 6,
     padding: 10,
     borderRadius: 16,
-    elevation: 1,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 1,
   },
   userBubble: {
     alignSelf: 'flex-end',
     backgroundColor: '#007bff',
-    borderBottomRightRadius: 4,
   },
   assistantBubble: {
     alignSelf: 'flex-start',
-    backgroundColor: '#fff',
-    borderBottomLeftRadius: 4,
+    backgroundColor: '#e0e0e0',
   },
   messageText: {
     fontSize: 16,
-    lineHeight: 22,
   },
   userMessageText: {
     color: '#fff',
   },
   assistantMessageText: {
-    color: '#333',
+    color: '#000',
   },
   inputWrapper: {
     backgroundColor: '#fff',
@@ -298,22 +222,6 @@ const styles = StyleSheet.create({
   },
   sendIcon: {
     marginLeft: 4,
-    marginBottom: 8,
-  },
-  loadingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 16,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 12,
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
-  loadingText: {
-    marginLeft: 8,
-    color: '#666',
-    fontSize: 14,
   },
 });
 
