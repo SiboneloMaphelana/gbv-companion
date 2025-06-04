@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1024" height="1024" viewBox="0 0 1024 1024" xmlns="http://www.w3.org/2000/svg">
+  <rect width="1024" height="1024" fill="#424242"/>
+  <rect x="162" y="162" width="700" height="700" fill="#616161" rx="50"/>
+  <rect x="212" y="212" width="600" height="150" fill="#E0E0E0"/>
+  <g fill="#FFFFFF">
+    <!-- Number pad -->
+    <rect x="212" y="412" width="150" height="150" rx="10"/>
+    <rect x="437" y="412" width="150" height="150" rx="10"/>
+    <rect x="662" y="412" width="150" height="150" rx="10"/>
+    
+    <rect x="212" y="587" width="150" height="150" rx="10"/>
+    <rect x="437" y="587" width="150" height="150" rx="10"/>
+    <rect x="662" y="587" width="150" height="150" rx="10"/>
+    
+    <rect x="212" y="762" width="150" height="150" rx="10"/>
+    <rect x="437" y="762" width="150" height="150" rx="10"/>
+    <rect x="662" y="762" width="150" height="150" rx="10"/>
+  </g>
+</svg> 

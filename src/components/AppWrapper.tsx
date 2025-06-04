@@ -6,6 +6,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { AuthProvider, useAuth } from '../context/AuthContext';
 import { EmergencyProvider } from '../context/EmergencyContext';
 import { ThemeProvider } from '../context/ThemeContext';
+import { OnboardingProvider, useOnboarding } from '../context/OnboardingContext';
 import ErrorBoundary from './common/ErrorBoundary';
 import { performanceMonitor } from '../utils/performance';
 import { securityManager } from '../utils/security';
@@ -13,6 +14,7 @@ import { cacheManager } from '../utils/cache';
 import EmergencyButton from './EmergencyButton';
 import AuthNavigator from '../navigation/AuthNavigator';
 import TabNavigator from '../navigation/TabNavigator';
+import OnboardingScreen from './onboarding/OnboardingScreen';
 
 // Ignore specific warnings
 LogBox.ignoreLogs([
@@ -26,6 +28,7 @@ interface Props {
 
 function AppContent() {
   const { isAuthenticated, loading } = useAuth();
+  const { hasCompletedOnboarding } = useOnboarding();
 
   if (loading) {
     return (
@@ -33,6 +36,10 @@ function AppContent() {
         <ActivityIndicator size="large" />
       </View>
     );
+  }
+
+  if (isAuthenticated && !hasCompletedOnboarding) {
+    return <OnboardingScreen />;
   }
 
   return (
@@ -75,7 +82,9 @@ const AppWrapper: React.FC<Props> = () => {
             <ThemeProvider>
               <EmergencyProvider>
                 <AuthProvider>
-                  <AppContent />
+                  <OnboardingProvider>
+                    <AppContent />
+                  </OnboardingProvider>
                 </AuthProvider>
               </EmergencyProvider>
             </ThemeProvider>
