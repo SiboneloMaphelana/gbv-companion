@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -8,26 +8,17 @@ import {
   Platform,
   Keyboard,
   TouchableOpacity,
-  StyleSheet,
   SafeAreaView,
+  ActivityIndicator,
 } from 'react-native';
 import { Surface } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
-
-interface Message {
-  id: string;
-  text: string;
-  sender: 'user' | 'assistant';
-}
+import { Message } from '../types/safety';
+import { useSafetyAssistant } from '../hooks/useSafetyAssistant';
+import { styles } from '../styles/safetyAssistant';
 
 const SafetyAssistantScreen = () => {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      text: 'Hi there! I am your Safety Assistant. How can I help you today?',
-      sender: 'assistant',
-    },
-  ]);
+  const { messages, isLoading, sendMessage, showEmergencyResources } = useSafetyAssistant();
   const [inputText, setInputText] = useState('');
   const [inputHeight, setInputHeight] = useState(42);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
@@ -48,26 +39,11 @@ const SafetyAssistantScreen = () => {
     };
   }, []);
 
-  const handleSend = () => {
-    if (inputText.trim().length === 0) return;
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      text: inputText,
-      sender: 'user',
-    };
-    setMessages((prevMessages) => [...prevMessages, newMessage]);
+  const handleSend = async () => {
+    if (inputText.trim().length === 0 || isLoading) return;
+    await sendMessage(inputText);
     setInputText('');
     setInputHeight(42);
-
-    // Simulate assistant reply
-    setTimeout(() => {
-      const reply: Message = {
-        id: Date.now().toString() + '-r',
-        text: 'Thank you for your message. Help is on the way.',
-        sender: 'assistant',
-      };
-      setMessages((prevMessages) => [...prevMessages, reply]);
-    }, 1000);
   };
 
   const renderItem = ({ item }: { item: Message }) => (
@@ -88,6 +64,16 @@ const SafetyAssistantScreen = () => {
     </Surface>
   );
 
+  const renderFooter = () => {
+    if (!isLoading) return null;
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="small" color="#007bff" />
+        <Text style={styles.loadingText}>Assistant is typing...</Text>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
@@ -100,7 +86,10 @@ const SafetyAssistantScreen = () => {
             <Text style={styles.header}>Safety Assistant</Text>
           </View>
         ) : (
-          <TouchableOpacity style={styles.emergencyButton}>
+          <TouchableOpacity 
+            style={styles.emergencyButton} 
+            onPress={showEmergencyResources}
+          >
             <Text style={styles.emergencyButtonText}>Emergency Resources</Text>
           </TouchableOpacity>
         )}
@@ -114,6 +103,7 @@ const SafetyAssistantScreen = () => {
           onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
           onLayout={() => flatListRef.current?.scrollToEnd({ animated: true })}
           keyboardShouldPersistTaps="handled"
+          ListFooterComponent={renderFooter}
         />
 
         <View style={styles.inputWrapper}>
@@ -127,12 +117,20 @@ const SafetyAssistantScreen = () => {
               returnKeyType="send"
               multiline
               blurOnSubmit={false}
+              editable={!isLoading}
               onContentSizeChange={(e) =>
                 setInputHeight(e.nativeEvent.contentSize.height)
               }
             />
-            <TouchableOpacity onPress={handleSend}>
-              <Ionicons name="send" size={24} color="#007bff" style={styles.sendIcon} />
+            <TouchableOpacity 
+              onPress={handleSend} 
+              disabled={isLoading || !inputText.trim()}
+            >
+              <Ionicons 
+                name="send" 
+                size={24} 
+                color={isLoading || !inputText.trim() ? '#ccc' : '#007bff'} 
+              />
             </TouchableOpacity>
           </View>
         </View>
@@ -140,89 +138,5 @@ const SafetyAssistantScreen = () => {
     </SafeAreaView>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#f5f5f5',
-  },
-  headerWrapper: {
-    paddingHorizontal: 16,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderColor: '#ddd',
-  },
-  header: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  emergencyButton: {
-    backgroundColor: '#ff4d4d',
-    padding: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  emergencyButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  chatContainer: {
-    padding: 10,
-    flexGrow: 1,
-  },
-  messageBubble: {
-    maxWidth: '80%',
-    marginVertical: 6,
-    padding: 10,
-    borderRadius: 16,
-  },
-  userBubble: {
-    alignSelf: 'flex-end',
-    backgroundColor: '#007bff',
-  },
-  assistantBubble: {
-    alignSelf: 'flex-start',
-    backgroundColor: '#e0e0e0',
-  },
-  messageText: {
-    fontSize: 16,
-  },
-  userMessageText: {
-    color: '#fff',
-  },
-  assistantMessageText: {
-    color: '#000',
-  },
-  inputWrapper: {
-    backgroundColor: '#fff',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    padding: 10,
-    borderTopWidth: 1,
-    borderColor: '#ccc',
-  },
-  input: {
-    flex: 1,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    borderRadius: 20,
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    marginRight: 8,
-    backgroundColor: '#fff',
-    fontSize: 16,
-    textAlignVertical: 'top',
-  },
-  sendIcon: {
-    marginLeft: 4,
-  },
-});
 
 export default SafetyAssistantScreen;

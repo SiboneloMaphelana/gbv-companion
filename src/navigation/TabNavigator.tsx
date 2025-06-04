@@ -15,6 +15,7 @@ import RiskAssessmentScreen from '../screens/RiskAssessmentScreen';
 import EmergencyContactsScreen from '../screens/EmergencyContactsScreen';
 import MentalHealthScreen from '../screens/MentalHealthScreen';
 import { EmergencyScreen } from '../screens/EmergencyScreen';
+import RiskCheck from '../components/RiskCheck';
 
 const Tab = createBottomTabNavigator();
 
@@ -58,11 +59,20 @@ export default function TabNavigator() {
       initialRouteName="Safety"
     >
       <Tab.Screen 
-        name="Risk Check" 
+        name="Risk Assessment" 
         component={RiskAssessmentScreen}
         options={{
           tabBarIcon: ({ color, size }) => (
             <Ionicons name="analytics-outline" size={size} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen 
+        name="RiskCheck" 
+        component={RiskCheck}
+        options={{
+          tabBarIcon: ({ color, size }) => (
+            <MaterialCommunityIcons name="shield-check" size={size} color={color} />
           ),
         }}
       />

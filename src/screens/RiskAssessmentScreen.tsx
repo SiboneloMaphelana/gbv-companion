@@ -1,8 +1,13 @@
 import React, { useState } from 'react';
 import { ScrollView, View, StyleSheet } from 'react-native';
 import { Text, Card, Button, RadioButton, Title, Divider, List, Portal, Modal } from 'react-native-paper';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import SafetyAssistant from '../components/SafetyAssistant';
+
+type RootStackParamList = {
+  RiskCheck: undefined;
+  Safety: undefined;
+};
 
 interface Question {
   id: string;
@@ -101,7 +106,7 @@ export default function RiskAssessmentScreen() {
   const [showResults, setShowResults] = useState(false);
   const [riskLevel, setRiskLevel] = useState<'high' | 'medium' | 'low' | null>(null);
   const [showSafetyAssistant, setShowSafetyAssistant] = useState(false);
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
 
   const calculateRiskLevel = () => {
     let totalScore = 0;
@@ -135,6 +140,7 @@ export default function RiskAssessmentScreen() {
     const level = calculateRiskLevel();
     setRiskLevel(level);
     setShowResults(true);
+    navigation.navigate('RiskCheck');
     if (level === 'high') {
       setShowSafetyAssistant(true);
     }

@@ -4,6 +4,10 @@ import { Audio } from 'expo-av';
 import * as SecureStore from 'expo-secure-store';
 import { Card, Title, Paragraph, Button, IconButton, Portal, Dialog, TextInput } from 'react-native-paper';
 import { Ionicons } from '@expo/vector-icons';
+import { createMaterialTopTabNavigator } from '@react-navigation/material-top-tabs';
+import EvidenceScreen from './EvidenceScreen';
+
+const Tab = createMaterialTopTabNavigator();
 
 interface JournalEntry {
   id: string;
@@ -13,7 +17,7 @@ interface JournalEntry {
   name?: string;
 }
 
-export default function JournalScreen() {
+function VoiceJournalScreen() {
   const [recording, setRecording] = useState<Audio.Recording | null>(null);
   const [entries, setEntries] = useState<JournalEntry[]>([]);
   const [isRecording, setIsRecording] = useState(false);
@@ -292,6 +296,31 @@ export default function JournalScreen() {
         </Dialog>
       </Portal>
     </View>
+  );
+}
+
+export default function JournalScreen() {
+  return (
+    <Tab.Navigator>
+      <Tab.Screen 
+        name="Voice Journal" 
+        component={VoiceJournalScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="mic" size={24} color={color} />
+          ),
+        }}
+      />
+      <Tab.Screen 
+        name="Evidence" 
+        component={EvidenceScreen}
+        options={{
+          tabBarIcon: ({ color }) => (
+            <Ionicons name="camera" size={24} color={color} />
+          ),
+        }}
+      />
+    </Tab.Navigator>
   );
 }
 

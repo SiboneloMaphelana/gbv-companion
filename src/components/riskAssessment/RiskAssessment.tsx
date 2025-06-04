@@ -3,7 +3,7 @@ import { View, ScrollView, StyleSheet, Linking } from 'react-native';
 import { Text, Card, Button, Portal, Modal, TextInput, IconButton, List, Divider, ProgressBar, Title, Paragraph } from 'react-native-paper';
 import { Calendar, DateData } from 'react-native-calendars';
 import { format } from 'date-fns';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import {
   dangerAssessmentService,
   ASSESSMENT_QUESTIONS,
@@ -12,8 +12,13 @@ import {
   AssessmentResult
 } from '../../services/dangerAssessmentService';
 
+type RootStackParamList = {
+  RiskCheck: undefined;
+  Journal: undefined;
+};
+
 const RiskAssessment = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
   const [incidents, setIncidents] = useState<IncidentRecord[]>([]);
   const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [showIncidentModal, setShowIncidentModal] = useState(false);
@@ -57,7 +62,7 @@ const RiskAssessment = () => {
     const result = dangerAssessmentService.getAssessmentResult();
     setAssessmentResult(result);
     setCurrentStep('results');
-    navigation.navigate('Journal' as never);
+    navigation.navigate('RiskCheck');
   };
 
   const getMarkedDates = () => {
