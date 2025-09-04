@@ -62,7 +62,6 @@ export const useSafePlaces = (): UseSafePlacesReturn => {
 
   const determineType = (place: GooglePlace): string => {
     // This will be determined by the type parameter used in the API call
-    // We can enhance this later if needed
     if (place.types?.includes('police')) return 'Police Station';
     if (place.types?.includes('hospital')) return 'Hospital';
     if (place.types?.includes('embassy')) return 'Embassy';

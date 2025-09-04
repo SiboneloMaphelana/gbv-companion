@@ -19,7 +19,6 @@ import RiskCheck from '../components/RiskCheck';
 
 const Tab = createBottomTabNavigator();
 
-// Custom theme
 const theme = {
   ...DefaultTheme,
   colors: {

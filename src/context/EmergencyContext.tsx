@@ -1,6 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import * as SecureStore from 'expo-secure-store';
-import * as Contacts from 'expo-contacts';
 import * as SMS from 'expo-sms';
 import * as Linking from 'expo-linking';
 import { Alert } from 'react-native';
